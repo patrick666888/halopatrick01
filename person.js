@@ -1,24 +1,9 @@
-let person = {}
-
-person.name = Peter 
-person.age = 23
-
-person.sayHallo = function (){
-    console.log('Hello,', this.name)
+let person = {
+    name: 'patrick' ,
+    age: 31 ,
 }
+let { name , age } = person 
+console.log(name)
+console.log(age)  
 
-person.sayHello()
-
-let toy = {}
-toy.name = 'fighter 101'
-toy.sayHello = person.sayHello
-
-toy.sayHello() 
-person.sayHello{}
-
-let { name, sayHello } = toy
-
-console.log('The name is:', name)
-
-sayHello()
 
