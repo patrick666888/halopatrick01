@@ -1,8 +1,9 @@
-let person = {
+let me = {
     name: 'patrick' ,
     age: 31 ,
 }
-let { name , age } = person 
+let { name , age } = me 
+
 console.log(name)
 console.log(age)  
 
