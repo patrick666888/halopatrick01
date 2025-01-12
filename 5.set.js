@@ -130,6 +130,7 @@ function chooseVote() {
 }
 
 // 投票選擇
+// 投票選擇
 function castVote(selectedSession) {
     const { question, options } = selectedSession;
     console.log(`投票題目: ${question}`);
@@ -152,7 +153,7 @@ function castVote(selectedSession) {
 
             const choiceIndex = parseInt(choice) - 1;
             if (choiceIndex >= 0 && choiceIndex < options.length) {
-                vote(voterId, options[choiceIndex]);
+                vote(voterId, options[choiceIndex], selectedSession); // 傳遞 selectedSession
             } else {
                 console.log('無效選擇，請輸入有效的選項編號，或輸入 BACK 返回上級菜單。');
                 castVote(selectedSession); // 重新詢問
@@ -162,7 +163,7 @@ function castVote(selectedSession) {
 }
 
 // 投票函數
-function vote(voterId, choice) {
+function vote(voterId, choice, selectedSession) {
     if (votes[voterId]) {
         console.log('您已經投過票，不能再次投票。');
         rl.question('按任意鍵返回主菜單...', () => {
