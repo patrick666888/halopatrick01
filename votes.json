@@ -1,8 +1,17 @@
 {
-  "1": {
-    "1": "1"
+  "votes": {
+    "patrick": {
+      "abc": "a"
+    }
   },
-  "patrick": {
-    "1": "1"
-  }
+  "votingSessions": [
+    {
+      "question": "abc",
+      "options": [
+        "a",
+        "b",
+        "c"
+      ]
+    }
+  ]
 }
