@@ -1,3 +1,4 @@
+const fs = require('fs');
 const readline = require('readline');
 
 // 创建 readline 接口
@@ -5,6 +6,11 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+
+// 文件路径
+const chatFilePath = 'chatMessages.txt';
+const gradesFilePath = 'studentGrades.txt';
+const shoppingFilePath = 'shoppingList.txt';
 
 // 主菜单
 function mainMenu() {
@@ -35,7 +41,7 @@ function mainMenu() {
 
 // 聊天室訊息操作
 function chatRoom() {
-    const messages = []; // 用于存储已传送的消息
+    const messages = loadChatMessages(); // 从文件加载消息
 
     function chatMenu() {
         console.log("\n聊天室訊息操作:");
@@ -47,12 +53,14 @@ function chatRoom() {
                     rl.question('请输入新的訊息: ', (message) => {
                         messages.push(message); // 使用 push 傳送新訊息
                         console.log(`訊息已傳送: "${message}"`);
+                        saveChatMessages(messages); // 保存消息到文件
                         console.log(`目前已傳送的訊息數量: ${messages.length}`); // 使用 length 檢查訊息數量
                         chatMenu(); // 返回聊天菜单
                     });
                     break;
                 case '2':
                     const removedMessage = messages.pop(); // 使用 pop 收回最後一則訊息
+                    saveChatMessages(messages); // 更新文件
                     console.log(removedMessage ? `已收回訊息: "${removedMessage}"` : "沒有訊息可收回。");
                     console.log(`目前已傳送的訊息數量: ${messages.length}`); // 使用 length 檢查訊息數量
                     chatMenu(); // 返回聊天菜单
@@ -74,10 +82,22 @@ function chatRoom() {
     chatMenu(); // 启动聊天菜单
 }
 
+// 加载聊天消息
+function loadChatMessages() {
+    if (fs.existsSync(chatFilePath)) {
+        return fs.readFileSync(chatFilePath, 'utf-8').split('\n').filter(Boolean);
+    }
+    return [];
+}
+
+// 保存聊天消息
+function saveChatMessages(messages) {
+    fs.writeFileSync(chatFilePath, messages.join('\n'));
+}
+
 // 學生成績登記
 function studentGrades() {
-    const students = [];
-    const grades = [];
+    const { students, grades } = loadStudentGrades(); // 从文件加载学生成绩
 
     function gradesMenu() {
         console.log("\n學生成績登記:");
@@ -91,6 +111,7 @@ function studentGrades() {
                             students.push(name);
                             grades.push(grade);
                             console.log(`已登記: ${name} - ${grade} 分`);
+                            saveStudentGrades(students, grades); // 保存成绩到文件
                             gradesMenu(); // 返回成绩菜单
                         });
                     });
@@ -131,9 +152,30 @@ function studentGrades() {
     gradesMenu();
 }
 
+// 加载学生成绩
+function loadStudentGrades() {
+    const students = [];
+    const grades = [];
+    if (fs.existsSync(gradesFilePath)) {
+        const data = fs.readFileSync(gradesFilePath, 'utf-8').trim().split('\n');
+        data.forEach(line => {
+            const [name, grade] = line.split(' - ');
+            students.push(name);
+            grades.push(grade);
+        });
+    }
+    return { students, grades };
+}
+
+// 保存学生成绩
+function saveStudentGrades(students, grades) {
+    const data = students.map((student, index) => `${student} - ${grades[index]}`).join('\n');
+    fs.writeFileSync(gradesFilePath, data);
+}
+
 // 購物清單
 function shoppingList() {
-    const items = [];
+    const items = loadShoppingList(); // 从文件加载购物清单
 
     function listMenu() {
         console.log("\n購物清單:");
@@ -146,6 +188,7 @@ function shoppingList() {
                         const id = items.length + 1; // 物品代号从1开始
                         items.push({ id, name: item });
                         console.log(`新增物品: ${id} - ${item}`);
+                        saveShoppingList(items); // 保存清单到文件
                         listMenu(); // 返回清单菜单
                     });
                     break;
@@ -160,6 +203,7 @@ function shoppingList() {
                         if (index !== -1) {
                             const removedItem = items.splice(index, 1)[0];
                             console.log(`刪除物品: ${removedItem.id} - ${removedItem.name}`);
+                            saveShoppingList(items); // 更新文件
                         } else {
                             console.log("無效的物品代号。");
                         }
@@ -186,6 +230,25 @@ function shoppingList() {
     }
 
     listMenu();
+}
+
+// 加载购物清单
+function loadShoppingList() {
+    const items = [];
+    if (fs.existsSync(shoppingFilePath)) {
+        const data = fs.readFileSync(shoppingFilePath, 'utf-8').trim().split('\n');
+        data.forEach(line => {
+            const [id, name] = line.split(' - ');
+            items.push({ id: parseInt(id), name });
+        });
+    }
+    return items;
+}
+
+// 保存购物清单
+function saveShoppingList(items) {
+    const data = items.map(item => `${item.id} - ${item.name}`).join('\n');
+    fs.writeFileSync(shoppingFilePath, data);
 }
 
 // 启动程序，显示主菜单
