@@ -1,7 +1,7 @@
 const fs = require('fs');
 const readline = require('readline');
 
-let votes = {};
+let votes = {}; // 每個用戶的投票記錄
 let options = []; // 存儲投票選項
 let question = ''; // 存儲投票題目
 const dataFile = 'votes.json'; // 數據文件
@@ -11,13 +11,19 @@ let votingSessions = []; // 存儲投票題目和選項
 function loadVotes() {
     if (fs.existsSync(dataFile)) {
         const data = fs.readFileSync(dataFile);
-        votes = JSON.parse(data);
+        const parsedData = JSON.parse(data);
+        votes = parsedData.votes || {};
+        votingSessions = parsedData.votingSessions || [];
     }
 }
 
 // 保存投票數據
 function saveVotes() {
-    fs.writeFileSync(dataFile, JSON.stringify(votes, null, 2));
+    const dataToSave = {
+        votes: votes,
+        votingSessions: votingSessions
+    };
+    fs.writeFileSync(dataFile, JSON.stringify(dataToSave, null, 2));
 }
 
 // 創建 readline 接口
@@ -31,8 +37,9 @@ function showMenu() {
     console.log('1: 查看投票題目並投票');
     console.log('2: 開始新投票');
     console.log('3: 查看最新投票結果');
+    console.log('4: 退出程式');
 
-    rl.question('輸入選項 (或輸入 BACK 返回上級菜單): ', (option) => {
+    rl.question('請選擇: ', (option) => {
         handleMenuOption(option);
     });
 }
@@ -49,6 +56,9 @@ function handleMenuOption(option) {
         case '3':
             displayResultsMenu();
             break;
+        case '4':
+            rl.close(); // 退出程式
+            return;
         default:
             console.log('無效選項，請重新選擇，或輸入 BACK 返回上級菜單。');
             rl.question('請輸入任意鍵返回上級菜單: ', () => {
@@ -84,6 +94,7 @@ function startNewVote() {
                     } else {
                         votingSessions.push({ question, options });
                         console.log('投票選項已設置：', options);
+                        saveVotes(); // 保存投票數據
                         showMenu(); // 返回主菜單
                     }
                 } else {
@@ -119,7 +130,7 @@ function chooseVote() {
         }
 
         const choiceIndex = parseInt(choice) - 1;
-        if (choiceIndex >= 0 && choiceIndex < votingSessions.length) {
+        if (!isNaN(choiceIndex) && choiceIndex >= 0 && choiceIndex < votingSessions.length) {
             const selectedSession = votingSessions[choiceIndex];
             castVote(selectedSession);
         } else {
@@ -129,7 +140,6 @@ function chooseVote() {
     });
 }
 
-// 投票選擇
 // 投票選擇
 function castVote(selectedSession) {
     const { question, options } = selectedSession;
@@ -145,6 +155,15 @@ function castVote(selectedSession) {
             return;
         }
 
+        // 確認用戶是否已經在此題目中投票
+        if (votes[voterId] && votes[voterId][question]) {
+            console.log('您已經在此題目中投過票，不能再次投票。');
+            rl.question('按任意鍵返回主菜單...', () => {
+                showMenu(); // 返回主菜單
+            });
+            return;
+        }
+
         rl.question('請輸入您的選擇 (選項編號，或輸入 BACK 返回上級菜單): ', (choice) => {
             if (choice.toUpperCase() === 'BACK') {
                 showMenu(); // 返回上級菜單
@@ -152,7 +171,7 @@ function castVote(selectedSession) {
             }
 
             const choiceIndex = parseInt(choice) - 1;
-            if (choiceIndex >= 0 && choiceIndex < options.length) {
+            if (!isNaN(choiceIndex) && choiceIndex >= 0 && choiceIndex < options.length) {
                 vote(voterId, options[choiceIndex], selectedSession); // 傳遞 selectedSession
             } else {
                 console.log('無效選擇，請輸入有效的選項編號，或輸入 BACK 返回上級菜單。');
@@ -164,15 +183,13 @@ function castVote(selectedSession) {
 
 // 投票函數
 function vote(voterId, choice, selectedSession) {
-    if (votes[voterId]) {
-        console.log('您已經投過票，不能再次投票。');
-        rl.question('按任意鍵返回主菜單...', () => {
-            showMenu(); // 返回主菜單
-        });
-        return;
+    // 初始化用戶的投票紀錄，如果還不存在
+    if (!votes[voterId]) {
+        votes[voterId] = {};
     }
 
-    votes[voterId] = choice;
+    // 記錄用戶對此題目的選擇
+    votes[voterId][selectedSession.question] = choice;
     console.log(`感謝您的投票！您的選擇: ${choice}`);
     saveVotes(); // 保存投票數據
 
@@ -207,7 +224,7 @@ function displayResultsMenu() {
         }
 
         const choiceIndex = parseInt(choice) - 1;
-        if (choiceIndex >= 0 && choiceIndex < votingSessions.length) {
+        if (!isNaN(choiceIndex) && choiceIndex >= 0 && choiceIndex < votingSessions.length) {
             const selectedSession = votingSessions[choiceIndex];
             displayResults(selectedSession); // 顯示選定題目的結果
         } else {
@@ -222,7 +239,9 @@ function displayResults(selectedSession) {
     const results = {};
     const { options } = selectedSession;
 
-    for (const choice of Object.values(votes)) {
+    // 計算每個選項的票數
+    for (const voter in votes) {
+        const choice = votes[voter][selectedSession.question];
         results[choice] = (results[choice] || 0) + 1;
     }
 
